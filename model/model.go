@@ -29,7 +29,9 @@ type Configuration struct {
 	QueryList            []string               `json:"queryList" bson:"queryList"`
 	DocumentsQuantity    int                    `json:"documentsQuantity" bson:"documentsQuantity"`
 	RelevantsQuantity    int                    `json:"relevantsQuantity" bson:"relevantsQuantity"`
+	Sensibility          int                    `json:"sensibility" bson:"sensibility"`
 	Database             DataBaseConfig         `json:"database" bson:"database"`
+	Interval             int                    `json:"interval" bson:"interval"`
 }
 
 type DataBaseConfig struct {
@@ -51,6 +53,7 @@ type VisitedLink struct {
 	Url            string        `json:"url" bson:"url"`
 	State          string        `json:"state" bson:"state"`
 	LocalTimestamp float64       `json:"localTimestamp" bson:"localTimestamp"`
+	Relevant       bool          `json:"relevant" bson:"relevant"`
 }
 
 type KeyStroke struct {

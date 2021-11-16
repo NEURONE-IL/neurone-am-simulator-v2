@@ -17,6 +17,23 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func CleanDatabase(configuration model.Configuration) error {
+
+	session, err := model.ConnectToDatabase(configuration.Database)
+
+	if err != nil {
+		return err
+	}
+
+	model.CleanCollection("userdata", session)
+	model.CleanCollection("visitedlinks", session)
+	model.CleanCollection("queries", session)
+	model.CleanCollection("keystrokes", session)
+	model.CleanCollection("bookmarks", session)
+
+	return nil
+}
+
 func SimulateNeurone(configuration model.Configuration, name string) error {
 
 	if len(configuration.ProbabilityGraph) < 1 {
@@ -31,7 +48,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 	}
 	fmt.Println(cumulativeProbabilityGraph)
 
-	//Init db connectio
+	//Init db connection
 
 	session, err := model.ConnectToDatabase(configuration.Database)
 
@@ -68,6 +85,8 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 			WrittingQuery: "",
 			QueryNumber:   0,
 			PageNumber:    0,
+			QueryIndex:    0,
+			Idle:          false,
 		}
 
 		participants = append(participants, participant)
@@ -90,6 +109,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 		documents = append(documents, d)
 	}
 
+	fmt.Println("documents", documents)
 	// Init channel
 
 	memory.CreateChannel(name)
@@ -144,29 +164,35 @@ func generateSimulation(name string, participants []model.Participant, documents
 	configuration model.Configuration,
 	cumulativeProbabilityGraph map[string][]model.ProbabilityAction,
 	session *mgo.Session) {
-	ticker := time.NewTicker(5000 * time.Millisecond)
-
+	ticker := time.NewTicker(time.Duration(configuration.Interval) * time.Millisecond)
+	finished := 0
 	for {
 		select {
 		case <-memory.Channels[name]:
-			fmt.Println("stopping")
+			fmt.Println("Simulation finished")
 			time.Sleep(1 * time.Second)
 			ticker.Stop()
 			return
 		case t := <-ticker.C:
 			fmt.Println("Init simulation for all participants", t, name)
-			for i := range participants {
+			if finished < len(participants) {
+				for i := range participants {
 
-				chooseNewAction(&participants[i], configuration, cumulativeProbabilityGraph)
-				makeAction(&participants[i], documents, session, configuration)
-				// fmt.Printf("%s: from %s  to %s\n", participants[i].Username, participants[i].PrevState, participants[i].CurrentState)
+					chooseNewAction(&participants[i], configuration, cumulativeProbabilityGraph, &finished)
+					makeAction(&participants[i], documents, session, configuration)
+					fmt.Printf("%s: from %s  to %s\n", participants[i].Username, participants[i].PrevState, participants[i].CurrentState)
+				}
+			} else {
+				go memory.ActivateChannel(name)
 			}
+
 		}
 	}
 }
 
 func chooseNewAction(participant *model.Participant, configuration model.Configuration,
-	cumulativeProbabilityGraph map[string][]model.ProbabilityAction) {
+	cumulativeProbabilityGraph map[string][]model.ProbabilityAction,
+	finished *int) {
 
 	newState := ""
 	participant.Idle = true
@@ -177,7 +203,7 @@ func chooseNewAction(participant *model.Participant, configuration model.Configu
 	} else if participant.CurrentState == "W" {
 		newState = checkWrittingQueryState(participant)
 		participant.Idle = false
-	} else if isAction >= 70 { // Este valor debe ser un parámetro
+	} else if isAction >= configuration.Sensibility { // Este valor debe ser un parámetro
 		participant.Idle = false
 		if participant.CurrentState == "S" && participant.OriginalState != "" {
 			newState = participant.OriginalState
@@ -188,7 +214,7 @@ func chooseNewAction(participant *model.Participant, configuration model.Configu
 		} else {
 			key := generateKey(participant)
 			n := float64(getRandom(1, 100)) / 100
-			// fmt.Println("key and n", key, n)
+			fmt.Println("key and n", key, n)
 			probabilities := cumulativeProbabilityGraph[key]
 			action := nextAction(n, key, probabilities)
 			action = translateAcction(action, participant)
@@ -202,7 +228,7 @@ func chooseNewAction(participant *model.Participant, configuration model.Configu
 
 	participant.PrevState = participant.CurrentState
 	participant.CurrentState = newState
-	updateCounters(participant)
+	updateCounters(participant, finished)
 
 }
 
@@ -213,6 +239,8 @@ func getRandom(min int, max int) int {
 }
 
 func checkWrittingQueryState(participant *model.Participant) string {
+	fmt.Println("currentQuery", participant.CurrentQuery)
+	fmt.Printf("writtingQuery:%s\n", participant.WrittingQuery)
 	if participant.CurrentQuery == participant.WrittingQuery {
 		return "Q"
 	} else {
@@ -253,7 +281,7 @@ func nextAction(n float64, key string, probabilities []model.ProbabilityAction) 
 	}
 
 	if strings.Contains(newAction, "Q") {
-		return "Q"
+		return "W"
 	} else if strings.Contains(newAction, "P") {
 		return "P"
 	} else {
@@ -264,23 +292,25 @@ func nextAction(n float64, key string, probabilities []model.ProbabilityAction) 
 
 func translateAcction(action string, participant *model.Participant) string {
 
-	if (action == "P" || action == "Q") &&
+	if (action == "P" || action == "W") &&
 		(participant.CurrentState == "P" || participant.CurrentState == "U" || participant.CurrentState == "B") {
 		participant.OriginalState = action
 		return "S"
-	} else if action == "Q" {
-		return "W"
 	} else {
 		return action
 	}
 }
 
-func updateCounters(participant *model.Participant) {
+func updateCounters(participant *model.Participant, finished *int) {
 	if participant.CurrentState == "Q" {
 		participant.PageNumber = 0
 		participant.QueryNumber++
 	} else if participant.CurrentState == "P" {
 		participant.PageNumber++
+	}
+
+	if participant.CurrentState == "T" {
+		*finished = *finished + 1
 	}
 }
 
@@ -329,13 +359,15 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			participant.QueryIndex = 0
 			participant.WrittingQuery = ""
 		}
+		fmt.Println("query", participant.CurrentQuery)
 		index := participant.QueryIndex
-		key := participant.CurrentQuery[index]
-		keyCode := rune(key)
+		// key := participant.CurrentQuery[index]
+		keyCode := []rune(participant.CurrentQuery)[index]
 
-		if getRandom(0, 100) >= 90 {
+		if participant.WrittingQuery != "" && getRandom(0, 100) >= 90 {
 			keyCode = 8
-			participant.WrittingQuery = participant.WrittingQuery[:len(participant.WrittingQuery)-1]
+			runeQ := []rune(participant.WrittingQuery)
+			participant.WrittingQuery = string(runeQ[:len(runeQ)-1])
 			if index != 0 {
 				index = index - 1
 			} else {
@@ -344,7 +376,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 
 		} else {
 			index++
-			participant.WrittingQuery = participant.WrittingQuery + string(key)
+			participant.WrittingQuery = participant.WrittingQuery + string(keyCode)
 		}
 		participant.QueryIndex = index
 		keyStroke := model.KeyStroke{
@@ -382,6 +414,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/page/%s", selectedDoc.ID),
+			Relevant:       selectedDoc.Relevant,
 			State:          "PageEnter",
 		}
 		searchLink := model.VisitedLink{
@@ -389,7 +422,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/search?query=%s", participant.CurrentQuery),
-			State:          "PageExitS",
+			State:          "PageExit",
 		}
 
 		go model.InsertElement("visitedlinks", document, s)

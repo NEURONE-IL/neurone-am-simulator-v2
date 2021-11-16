@@ -18,7 +18,30 @@ type Controller struct {
 func (controller *Controller) Routes(base *gin.RouterGroup) {
 
 	base.POST("/init/:name", controller.CreateSimulation())
+	base.POST("/clean", controller.CleanDatabase())
 	base.GET("/stop/:name", controller.StopSimulation())
+
+}
+
+func (controller *Controller) CleanDatabase() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var configuration model.Configuration
+
+		err := c.Bind(&configuration)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, util.GetError("No se pudo decodificar json", err))
+			return
+		}
+
+		err = generation.CleanDatabase(configuration)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, util.GetError("Simulation failed", err))
+			return
+		}
+		c.JSON(http.StatusOK, "ok")
+	}
 }
 
 func (controller *Controller) CreateSimulation() func(c *gin.Context) {
