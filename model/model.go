@@ -1,9 +1,11 @@
 package model
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Participant struct {
-	ID            bson.ObjectId `json:"id"              bson:"_id"`
+	ID            primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username      string        `json:"username" bson:"username"`
 	CurrentState  string        `json:"currentState" bson:"currentState"`
 	PrevState     string        `json:"prevState" bson:"prevState"`
@@ -23,7 +25,7 @@ type Document struct {
 }
 
 type Configuration struct {
-	ID                   bson.ObjectId          `json:"id"              bson:"_id"`
+	ID                   primitive.ObjectID            `json:"id"              bson:"_id"`
 	ProbabilityGraph     map[string]interface{} `json:"probabilityGraph" bson:"probabilityGraph"`
 	ParticipantsQuantity int                    `json:"participantQuantity" bson:"participantQuantity"`
 	QueryList            []string               `json:"queryList" bson:"queryList"`
@@ -48,37 +50,38 @@ type ProbabilityAction struct {
 }
 
 type VisitedLink struct {
-	ID             bson.ObjectId `json:"id"              bson:"_id"`
+	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
 	State          string        `json:"state" bson:"state"`
-	LocalTimestamp float64       `json:"localTimestamp" bson:"localTimestamp"`
+	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Relevant       bool          `json:"relevant" bson:"relevant"`
 }
 
 type KeyStroke struct {
-	ID             bson.ObjectId `json:"id"              bson:"_id"`
+	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
-	LocalTimestamp float64       `json:"localTimestamp" bson:"localTimestamp"`
+	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	KeyCode        int           `json:"keyCode" bson:"keyCode"`
 }
 
 type Query struct {
-	ID             bson.ObjectId `json:"id"              bson:"_id"`
+	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
-	LocalTimestamp float64       `json:"localTimestamp" bson:"localTimestamp"`
+	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Query          string        `json:"query" bson:"query"`
 }
 
 type Bookmark struct {
-	ID             bson.ObjectId `json:"id"              bson:"_id"`
+	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
-	LocalTimestamp float64       `json:"localTimestamp" bson:"localTimestamp"`
+	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Action         string        `json:"action" bson:"action"`
 	DocId          string        `json:"docId" bson:"docId"`
 	Relevant       bool          `json:"relevant" bson:"relevant"`
 	UserMade       bool          `json:"userMade" bson:"userMade"`
 }
+

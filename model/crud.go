@@ -1,23 +1,24 @@
 package model
 
 import (
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"log"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func InsertElement(collection string, element interface{}, session *mgo.Session) error {
-
-	col, s := GetCollection(collection, session)
-	defer s.Close()
-
-	return col.Insert(element)
+func InsertElement(collection string, element interface{}, database *mongo.Database) error {
+	col, ctx := GetMongoCollection(collection, database)
+	_,err:=col.InsertOne(ctx, element)
+	return err
 
 }
 
-func CleanCollection(collection string, session *mgo.Session) error {
-	col, s := GetCollection(collection, session)
-	defer s.Close()
+func CleanCollection(collection string, database *mongo.Database) error {
+	col, ctx := GetMongoCollection(collection, database)
+	err:=col.Drop(ctx)
 
-	_, err := col.RemoveAll(bson.M{})
+	if err != nil {
+		log.Printf("Error cleaning collection %s, Error: %s", collection, err.Error())
+	}
 	return err
 }

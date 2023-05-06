@@ -3,6 +3,7 @@ package generation
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 
@@ -13,23 +14,23 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func CleanDatabase(configuration model.Configuration) error {
 
-	session, err := model.ConnectToDatabase(configuration.Database)
+	database, err := model.GetDatabaseInstance(configuration.Database)
 
+	
 	if err != nil {
 		return err
 	}
 
-	model.CleanCollection("userdata", session)
-	model.CleanCollection("visitedlinks", session)
-	model.CleanCollection("queries", session)
-	model.CleanCollection("keystrokes", session)
-	model.CleanCollection("bookmarks", session)
+	model.CleanCollection("userdata", database) 
+	model.CleanCollection("visitedlinks", database)
+	model.CleanCollection("queries", database)
+	model.CleanCollection("keystrokes", database)
+	model.CleanCollection("bookmarks", database)
 
 	return nil
 }
@@ -50,17 +51,18 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 
 	//Init db connection
 
-	session, err := model.ConnectToDatabase(configuration.Database)
+	database, err := model.GetDatabaseInstance(configuration.Database)
 
 	if err != nil {
+		log.Printf("Error connecting to database: %s", err.Error())
 		return err
 	}
 
-	model.CleanCollection("userdata", session)
-	model.CleanCollection("visitedlinks", session)
-	model.CleanCollection("queries", session)
-	model.CleanCollection("keystrokes", session)
-	model.CleanCollection("bookmarks", session)
+	model.CleanCollection("userdata", database)
+	model.CleanCollection("visitedlinks", database)
+	model.CleanCollection("queries", database)
+	model.CleanCollection("keystrokes", database)
+	model.CleanCollection("bookmarks", database)
 	// database := session.DB(configuration.Database.DatabaseName)
 
 	// fmt.Println(database)
@@ -75,7 +77,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 
 	for i := 1; i <= configuration.ParticipantsQuantity; i++ {
 		participant := model.Participant{
-			ID:            bson.NewObjectId(),
+			ID:            model.GetNewObjectId(),
 			Username:      fmt.Sprintf("participant%d", i),
 			CurrentState:  "I",
 			PrevState:     "",
@@ -90,7 +92,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 		}
 
 		participants = append(participants, participant)
-		err = model.InsertElement("userdata", participant, session)
+		err = model.InsertElement("userdata", participant, database)
 		if err != nil {
 			return err
 		}
@@ -116,7 +118,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 
 	//Run neurone simulation
 	go generateSimulation(name, participants, documents,
-		configuration, cumulativeProbabilityGraph, session)
+		configuration, cumulativeProbabilityGraph, database)
 	return nil
 }
 
@@ -163,7 +165,7 @@ func generateCumulativeProbabilityList(value interface{}) ([]model.ProbabilityAc
 func generateSimulation(name string, participants []model.Participant, documents []model.Document,
 	configuration model.Configuration,
 	cumulativeProbabilityGraph map[string][]model.ProbabilityAction,
-	session *mgo.Session) {
+	database *mongo.Database) {
 	ticker := time.NewTicker(time.Duration(configuration.Interval) * time.Millisecond)
 	finished := 0
 	for {
@@ -179,7 +181,7 @@ func generateSimulation(name string, participants []model.Participant, documents
 				for i := range participants {
 
 					chooseNewAction(&participants[i], configuration, cumulativeProbabilityGraph, &finished)
-					makeAction(&participants[i], documents, session, configuration)
+					makeAction(&participants[i], documents, database, configuration)
 					fmt.Printf("%s: from %s  to %s\n", participants[i].Username, participants[i].PrevState, participants[i].CurrentState)
 				}
 			} else {
@@ -315,7 +317,7 @@ func updateCounters(participant *model.Participant, finished *int) {
 }
 
 func makeAction(participant *model.Participant, documents []model.Document,
-	s *mgo.Session,
+	database *mongo.Database,
 	configuration model.Configuration) {
 
 	if participant.Idle {
@@ -327,7 +329,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		if participant.PrevState == "I" {
 
 			link = model.VisitedLink{
-				ID:             bson.NewObjectId(),
+				ID:            model.GetNewObjectId(),
 				Username:       participant.Username,
 				Url:            "/tutorial?stage=search",
 				State:          "PageExit",
@@ -335,23 +337,23 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			}
 		} else {
 			link = model.VisitedLink{
-				ID:             bson.NewObjectId(),
+				ID:             model.GetNewObjectId(),
 				Username:       participant.Username,
 				Url:            "/page/" + participant.CurrentPage.ID,
 				State:          "PageExit",
 				LocalTimestamp: float64(time.Now().Unix() * 1000),
 			}
 		}
-		go model.InsertElement("visitedlinks", link, s)
+		go model.InsertElement("visitedlinks", link, database)
 
 		visitedLink := model.VisitedLink{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			Url:            "/search",
 			State:          "PageEnter",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
-		go model.InsertElement("visitedlinks", visitedLink, s)
+		go model.InsertElement("visitedlinks", visitedLink, database)
 	case "W":
 
 		if participant.PrevState != "W" {
@@ -380,37 +382,37 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		}
 		participant.QueryIndex = index
 		keyStroke := model.KeyStroke{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			KeyCode:        int(keyCode),
 			Username:       participant.Username,
 			Url:            "/search",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
 
-		go model.InsertElement("keystrokes", keyStroke, s)
+		go model.InsertElement("keystrokes", keyStroke, database)
 
 	case "Q":
 		keyStrokeEnter := model.KeyStroke{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			KeyCode:        13,
 			Username:       participant.Username,
 			Url:            "/search",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
-		go model.InsertElement("keystrokes", keyStrokeEnter, s)
+		go model.InsertElement("keystrokes", keyStrokeEnter, database)
 		query := model.Query{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			Url:            "/search",
 			Query:          participant.CurrentQuery,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
 
-		go model.InsertElement("queries", query, s)
+		go model.InsertElement("queries", query, database)
 	case "P":
 		selectedDoc := getRandomDocument(documents)
 		document := model.VisitedLink{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/page/%s", selectedDoc.ID),
@@ -418,20 +420,20 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			State:          "PageEnter",
 		}
 		searchLink := model.VisitedLink{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/search?query=%s", participant.CurrentQuery),
 			State:          "PageExit",
 		}
 
-		go model.InsertElement("visitedlinks", document, s)
-		go model.InsertElement("visitedlinks", searchLink, s)
+		go model.InsertElement("visitedlinks", document, database)
+		go model.InsertElement("visitedlinks", searchLink, database)
 		participant.CurrentPage = selectedDoc
 
 	case "B":
 		bookmark := model.Bookmark{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Action:         "Bookmark",
@@ -440,11 +442,11 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			UserMade:       true,
 		}
 
-		go model.InsertElement("bookmarks", bookmark, s)
+		go model.InsertElement("bookmarks", bookmark, database)
 
 	case "U":
 		unBookmark := model.Bookmark{
-			ID:             bson.NewObjectId(),
+			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Action:         "Unbookmark",
@@ -453,7 +455,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			UserMade:       true,
 		}
 
-		go model.InsertElement("bookmarks", unBookmark, s)
+		go model.InsertElement("bookmarks", unBookmark, database)
 	default:
 		break
 	}
