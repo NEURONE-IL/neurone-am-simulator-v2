@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo
+    container_name: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin_password
+      - MONGO_INITDB_DATABASE=neurone
+      - MONGO_REPLICA_SET_NAME=rs0
+    command: sh -c "
+      mongod --replSet rs0 --keyFile /data/file.key --bind_ip_all --journal"
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-init/setup.sh:/scripts/setup.sh
+      - ./mongo-key/file.key:/data/file.key
+    networks:
+      - mongo_cluster
+
+networks:
+  mongo_cluster:
+    driver: bridge

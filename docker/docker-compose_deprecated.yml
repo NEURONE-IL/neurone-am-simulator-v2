@@ -1,0 +1,20 @@
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongodb
+    command: " --config /docker-entrypoint-initdb.d/mongod.conf --replSet rs0 --oplogSize 128"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: neurone
+    volumes:
+      - mongodb:/data/db
+      - ./mongo/mongod.conf:/docker-entrypoint-initdb.d/mongod.conf
+      - ./mongo/mongodb.key:/docker-entrypoint-initdb.d/mongodb.key
+      - ./createdbuser.js:/docker-entrypoint-initdb.d/createdbuser.js:ro
+    ports:
+      - 27018:27017
+volumes:
+  mongodb:
