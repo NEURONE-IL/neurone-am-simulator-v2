@@ -31,6 +31,7 @@ func CleanDatabase(configuration model.Configuration) error {
 	model.CleanCollection("queries", database)
 	model.CleanCollection("keystrokes", database)
 	model.CleanCollection("bookmarks", database)
+	model.CleanCollection("events", database)
 
 	return nil
 }
@@ -63,6 +64,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 	model.CleanCollection("queries", database)
 	model.CleanCollection("keystrokes", database)
 	model.CleanCollection("bookmarks", database)
+	model.CleanCollection("events", database)
 	// database := session.DB(configuration.Database.DatabaseName)
 
 	// fmt.Println(database)
@@ -79,6 +81,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 		participant := model.Participant{
 			ID:            model.GetNewObjectId(),
 			Username:      fmt.Sprintf("participant%d", i),
+			UserId:        model.GetNewObjectId(),
 			CurrentState:  "I",
 			PrevState:     "",
 			OriginalState: "",
@@ -182,7 +185,7 @@ func generateSimulation(name string, participants []model.Participant, documents
 
 					chooseNewAction(&participants[i], configuration, cumulativeProbabilityGraph, &finished)
 					makeAction(&participants[i], documents, database, configuration)
-					fmt.Printf("%s: from %s  to %s\n", participants[i].Username, participants[i].PrevState, participants[i].CurrentState)
+					fmt.Printf("%s: from %s  to %s\n", participants[i].UserId.Hex(), participants[i].PrevState, participants[i].CurrentState)
 				}
 			} else {
 				go memory.ActivateChannel(name)
@@ -326,19 +329,37 @@ func makeAction(participant *model.Participant, documents []model.Document,
 	switch participant.CurrentState {
 	case "S":
 		var link model.VisitedLink
+		var event model.Event
+		type_options:=[]string{"FirstChallengeStarted","ChallengeStarted"}
+		randomIndex := rand.Intn(len(type_options))
+		picked_option := type_options[randomIndex]
 		if participant.PrevState == "I" {
+
+			event= model.Event{
+				ID:            model.GetNewObjectId(),
+				UserId: 	  participant.UserId,
+				Url:            "/tutorial?stage=search",
+				LocalTimestamp: float64(time.Now().Unix() * 1000),
+				Type: picked_option,
+				Source: "Window",
+			}
+			go model.InsertElement("events", event, database)
 
 			link = model.VisitedLink{
 				ID:            model.GetNewObjectId(),
 				Username:       participant.Username,
+				UserId: 	  participant.UserId,
 				Url:            "/tutorial?stage=search",
 				State:          "PageExit",
 				LocalTimestamp: float64(time.Now().Unix() * 1000),
 			}
+
+
 		} else {
 			link = model.VisitedLink{
 				ID:             model.GetNewObjectId(),
 				Username:       participant.Username,
+				UserId: 	  participant.UserId,
 				Url:            "/page/" + participant.CurrentPage.ID,
 				State:          "PageExit",
 				LocalTimestamp: float64(time.Now().Unix() * 1000),
@@ -349,6 +370,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		visitedLink := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			Url:            "/search",
 			State:          "PageEnter",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
@@ -385,6 +407,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			KeyCode:        int(keyCode),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			Url:            "/search",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
@@ -396,6 +419,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			KeyCode:        13,
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			Url:            "/search",
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 		}
@@ -403,6 +427,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		query := model.Query{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			Url:            "/search",
 			Query:          participant.CurrentQuery,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
@@ -414,6 +439,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		document := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/page/%s", selectedDoc.ID),
 			Relevant:       selectedDoc.Relevant,
@@ -422,6 +448,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		searchLink := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Url:            fmt.Sprintf("/search?query=%s", participant.CurrentQuery),
 			State:          "PageExit",
@@ -435,6 +462,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		bookmark := model.Bookmark{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Action:         "Bookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),
@@ -448,6 +476,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		unBookmark := model.Bookmark{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
+			UserId: 	  participant.UserId,
 			LocalTimestamp: float64(time.Now().Unix() * 1000),
 			Action:         "Unbookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),

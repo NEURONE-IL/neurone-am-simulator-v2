@@ -7,6 +7,7 @@ import (
 type Participant struct {
 	ID            primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username      string        `json:"username" bson:"username"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	CurrentState  string        `json:"currentState" bson:"currentState"`
 	PrevState     string        `json:"prevState" bson:"prevState"`
 	OriginalState string        `json:"originalState" bson:"originalState"`
@@ -52,6 +53,7 @@ type ProbabilityAction struct {
 type VisitedLink struct {
 	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
 	State          string        `json:"state" bson:"state"`
 	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
@@ -61,6 +63,7 @@ type VisitedLink struct {
 type KeyStroke struct {
 	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
 	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	KeyCode        int           `json:"keyCode" bson:"keyCode"`
@@ -69,6 +72,7 @@ type KeyStroke struct {
 type Query struct {
 	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
 	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Query          string        `json:"query" bson:"query"`
@@ -78,6 +82,7 @@ type Bookmark struct {
 	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Action         string        `json:"action" bson:"action"`
 	DocId          string        `json:"docId" bson:"docId"`
@@ -85,3 +90,13 @@ type Bookmark struct {
 	UserMade       bool          `json:"userMade" bson:"userMade"`
 }
 
+type Event struct {
+
+	ID             primitive.ObjectID   `json:"id"              bson:"_id"`
+	Type 		 string        `json:"type" bson:"type"`
+	Source string 	  `json:"source" bson:"source"`
+	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
+	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	Url            string        `json:"url" bson:"url"`
+
+}
