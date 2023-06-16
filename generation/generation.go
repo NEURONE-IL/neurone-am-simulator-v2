@@ -339,7 +339,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 				ID:            model.GetNewObjectId(),
 				UserId: 	  participant.UserId,
 				Url:            "/tutorial?stage=search",
-				LocalTimestamp: float64(time.Now().Unix() * 1000),
+				LocalTimestamp: time.Now().Unix() * 1000,
 				Type: picked_option,
 				Source: "Window",
 			}
@@ -351,7 +351,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 				UserId: 	  participant.UserId,
 				Url:            "/tutorial?stage=search",
 				State:          "PageExit",
-				LocalTimestamp: float64(time.Now().Unix() * 1000),
+				LocalTimestamp: time.Now().Unix() * 1000,
 			}
 
 
@@ -362,7 +362,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 				UserId: 	  participant.UserId,
 				Url:            "/page/" + participant.CurrentPage.ID,
 				State:          "PageExit",
-				LocalTimestamp: float64(time.Now().Unix() * 1000),
+				LocalTimestamp: time.Now().Unix() * 1000,
 			}
 		}
 		go model.InsertElement("visitedlinks", link, database)
@@ -373,7 +373,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			UserId: 	  participant.UserId,
 			Url:            "/search",
 			State:          "PageEnter",
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 		}
 		go model.InsertElement("visitedlinks", visitedLink, database)
 	case "W":
@@ -409,7 +409,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
 			Url:            "/search",
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 		}
 
 		go model.InsertElement("keystrokes", keyStroke, database)
@@ -421,7 +421,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
 			Url:            "/search",
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 		}
 		go model.InsertElement("keystrokes", keyStrokeEnter, database)
 		query := model.Query{
@@ -430,7 +430,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			UserId: 	  participant.UserId,
 			Url:            "/search",
 			Query:          participant.CurrentQuery,
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 		}
 
 		go model.InsertElement("queries", query, database)
@@ -440,7 +440,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 			Url:            fmt.Sprintf("/page/%s", selectedDoc.ID),
 			Relevant:       selectedDoc.Relevant,
 			State:          "PageEnter",
@@ -449,7 +449,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 			Url:            fmt.Sprintf("/search?query=%s", participant.CurrentQuery),
 			State:          "PageExit",
 		}
@@ -463,7 +463,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 			Action:         "Bookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),
 			Relevant:       participant.CurrentPage.Relevant,
@@ -477,7 +477,7 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
 			UserId: 	  participant.UserId,
-			LocalTimestamp: float64(time.Now().Unix() * 1000),
+			LocalTimestamp: time.Now().Unix() * 1000,
 			Action:         "Unbookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),
 			Relevant:       participant.CurrentPage.Relevant,

@@ -56,7 +56,7 @@ type VisitedLink struct {
 	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
 	State          string        `json:"state" bson:"state"`
-	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	LocalTimestamp int64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Relevant       bool          `json:"relevant" bson:"relevant"`
 }
 
@@ -65,7 +65,7 @@ type KeyStroke struct {
 	Username       string        `json:"username" bson:"username"`
 	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
-	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	LocalTimestamp int64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	KeyCode        int           `json:"keyCode" bson:"keyCode"`
 }
 
@@ -74,7 +74,7 @@ type Query struct {
 	Username       string        `json:"username" bson:"username"`
 	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
 	Url            string        `json:"url" bson:"url"`
-	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	LocalTimestamp int64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Query          string        `json:"query" bson:"query"`
 }
 
@@ -83,7 +83,7 @@ type Bookmark struct {
 	Username       string        `json:"username" bson:"username"`
 	Url            string        `json:"url" bson:"url"`
 	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
-	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	LocalTimestamp int64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Action         string        `json:"action" bson:"action"`
 	DocId          string        `json:"docId" bson:"docId"`
 	Relevant       bool          `json:"relevant" bson:"relevant"`
@@ -96,7 +96,7 @@ type Event struct {
 	Type 		 string        `json:"type" bson:"type"`
 	Source string 	  `json:"source" bson:"source"`
 	UserId 		  primitive.ObjectID   `json:"userId" bson:"userId"`
-	LocalTimestamp float64       `json:"localTimeStamp" bson:"localTimeStamp"`
+	LocalTimestamp int64       `json:"localTimeStamp" bson:"localTimeStamp"`
 	Url            string        `json:"url" bson:"url"`
 
 }
