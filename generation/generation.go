@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -21,12 +22,11 @@ func CleanDatabase(configuration model.Configuration) error {
 
 	database, err := model.GetDatabaseInstance(configuration.Database)
 
-	
 	if err != nil {
 		return err
 	}
 
-	model.CleanCollection("userdata", database) 
+	model.CleanCollection("userdata", database)
 	model.CleanCollection("visitedlinks", database)
 	model.CleanCollection("queries", database)
 	model.CleanCollection("keystrokes", database)
@@ -82,6 +82,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 			ID:            model.GetNewObjectId(),
 			Username:      fmt.Sprintf("participant%d", i),
 			UserId:        model.GetNewObjectId(),
+			StudyId:       getRandomStudy().ID,
 			CurrentState:  "I",
 			PrevState:     "",
 			OriginalState: "",
@@ -330,36 +331,38 @@ func makeAction(participant *model.Participant, documents []model.Document,
 	case "S":
 		var link model.VisitedLink
 		var event model.Event
-		type_options:=[]string{"FirstChallengeStarted","ChallengeStarted"}
+		type_options := []string{"FirstChallengeStarted", "ChallengeStarted"}
 		randomIndex := rand.Intn(len(type_options))
 		picked_option := type_options[randomIndex]
 		if participant.PrevState == "I" {
 
-			event= model.Event{
-				ID:            model.GetNewObjectId(),
-				UserId: 	  participant.UserId,
+			event = model.Event{
+				ID:             model.GetNewObjectId(),
+				UserId:         participant.UserId,
+				StudyId:        participant.StudyId,
 				Url:            "/tutorial?stage=search",
 				LocalTimestamp: time.Now().Unix() * 1000,
-				Type: picked_option,
-				Source: "Window",
+				Type:           picked_option,
+				Source:         "Window",
 			}
 			go model.InsertElement("events", event, database)
 
 			link = model.VisitedLink{
-				ID:            model.GetNewObjectId(),
+				ID:             model.GetNewObjectId(),
 				Username:       participant.Username,
-				UserId: 	  participant.UserId,
+				UserId:         participant.UserId,
+				StudyId:        participant.StudyId,
 				Url:            "/tutorial?stage=search",
 				State:          "PageExit",
 				LocalTimestamp: time.Now().Unix() * 1000,
 			}
 
-
 		} else {
 			link = model.VisitedLink{
 				ID:             model.GetNewObjectId(),
 				Username:       participant.Username,
-				UserId: 	  participant.UserId,
+				UserId:         participant.UserId,
+				StudyId:        participant.StudyId,
 				Url:            "/page/" + participant.CurrentPage.ID,
 				State:          "PageExit",
 				LocalTimestamp: time.Now().Unix() * 1000,
@@ -370,7 +373,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		visitedLink := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			Url:            "/search",
 			State:          "PageEnter",
 			LocalTimestamp: time.Now().Unix() * 1000,
@@ -407,7 +411,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			KeyCode:        int(keyCode),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			Url:            "/search",
 			LocalTimestamp: time.Now().Unix() * 1000,
 		}
@@ -419,7 +424,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 			ID:             model.GetNewObjectId(),
 			KeyCode:        13,
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			Url:            "/search",
 			LocalTimestamp: time.Now().Unix() * 1000,
 		}
@@ -427,7 +433,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		query := model.Query{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			Url:            "/search",
 			Query:          participant.CurrentQuery,
 			LocalTimestamp: time.Now().Unix() * 1000,
@@ -439,7 +446,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		document := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			LocalTimestamp: time.Now().Unix() * 1000,
 			Url:            fmt.Sprintf("/page/%s", selectedDoc.ID),
 			Relevant:       selectedDoc.Relevant,
@@ -448,7 +456,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		searchLink := model.VisitedLink{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			LocalTimestamp: time.Now().Unix() * 1000,
 			Url:            fmt.Sprintf("/search?query=%s", participant.CurrentQuery),
 			State:          "PageExit",
@@ -462,7 +471,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		bookmark := model.Bookmark{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			LocalTimestamp: time.Now().Unix() * 1000,
 			Action:         "Bookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),
@@ -476,7 +486,8 @@ func makeAction(participant *model.Participant, documents []model.Document,
 		unBookmark := model.Bookmark{
 			ID:             model.GetNewObjectId(),
 			Username:       participant.Username,
-			UserId: 	  participant.UserId,
+			UserId:         participant.UserId,
+			StudyId:        participant.StudyId,
 			LocalTimestamp: time.Now().Unix() * 1000,
 			Action:         "Unbookmark",
 			Url:            fmt.Sprintf("/page/%s", participant.CurrentPage.ID),
@@ -500,4 +511,24 @@ func getRandomDocument(documents []model.Document) model.Document {
 	n := len(documents) - 1
 	n = getRandom(0, n)
 	return documents[n]
+}
+
+// mustObjectIDFromHex is a utility function that converts a hex string to a primitive.ObjectID or panics if it cannot.
+func mustObjectIDFromHex(s string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(s)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to convert hex string to ObjectID: %v", err))
+	}
+	return id
+}
+func getRandomStudy() model.Study {
+	studies := []model.Study{
+		{ID: mustObjectIDFromHex("5f9f1b5a9d9a9e1b9a0e1b9a"), Name: "Study 1"},
+		{ID: mustObjectIDFromHex("5f9f1b5a9d9a9e1b9a0e1b9b"), Name: "Study 2"},
+		{ID: mustObjectIDFromHex("5f9f1b5a9d9a9e1b9a0e1b9c"), Name: "Study 3"},
+		{ID: mustObjectIDFromHex("5f9f1b5a9d9a9e1b9a0e1b9d"), Name: "Study 4"},
+	}
+	n := len(studies) - 1
+	n = getRandom(0, n)
+	return studies[n]
 }
