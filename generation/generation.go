@@ -26,12 +26,7 @@ func CleanDatabase(configuration model.Configuration) error {
 		return err
 	}
 
-	model.CleanCollection("userdata", database)
-	model.CleanCollection("visitedlinks", database)
-	model.CleanCollection("queries", database)
-	model.CleanCollection("keystrokes", database)
-	model.CleanCollection("bookmarks", database)
-	model.CleanCollection("events", database)
+	cleanDatabaseCollections(database)
 
 	return nil
 }
@@ -59,12 +54,7 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 		return err
 	}
 
-	model.CleanCollection("userdata", database)
-	model.CleanCollection("visitedlinks", database)
-	model.CleanCollection("queries", database)
-	model.CleanCollection("keystrokes", database)
-	model.CleanCollection("bookmarks", database)
-	model.CleanCollection("events", database)
+	cleanDatabaseCollections(database)
 	// database := session.DB(configuration.Database.DatabaseName)
 
 	// fmt.Println(database)
@@ -136,6 +126,17 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 	go generateSimulation(name, participants, documents,
 		configuration, cumulativeProbabilityGraph, database)
 	return nil
+}
+
+func cleanDatabaseCollections(database *mongo.Database) {
+
+	model.CleanCollection("userdata", database)
+	model.CleanCollection("visitedlinks", database)
+	model.CleanCollection("queries", database)
+	model.CleanCollection("keystrokes", database)
+	model.CleanCollection("bookmarks", database)
+	model.CleanCollection("events", database)
+	model.CleanCollection("metrics", database)
 }
 
 func getPrefefiObjectId(predefinedIds []string) (string, []string) {
