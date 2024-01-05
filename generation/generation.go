@@ -77,11 +77,23 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 		return errors.New("One participant must be generated at least")
 	}
 
+	predefinedUsersIds := configuration.PredefinedUsersIds
 	for i := 1; i <= configuration.ParticipantsQuantity; i++ {
+
+		var userId primitive.ObjectID
+		var predefinedUserId string
+		predefinedUserId, predefinedUsersIds = getPrefefiObjectId(predefinedUsersIds)
+
+		if predefinedUserId != "" {
+			userId = mustObjectIDFromHex(predefinedUserId)
+		} else {
+			userId = model.GetNewObjectId()
+		}
+
 		participant := model.Participant{
 			ID:            model.GetNewObjectId(),
 			Username:      fmt.Sprintf("participant%d", i),
-			UserId:        model.GetNewObjectId(),
+			UserId:        userId,
 			StudyId:       getRandomStudy().ID,
 			CurrentState:  "I",
 			PrevState:     "",
@@ -124,6 +136,18 @@ func SimulateNeurone(configuration model.Configuration, name string) error {
 	go generateSimulation(name, participants, documents,
 		configuration, cumulativeProbabilityGraph, database)
 	return nil
+}
+
+func getPrefefiObjectId(predefinedIds []string) (string, []string) {
+	if len(predefinedIds) > 0 {
+
+		lastElement := predefinedIds[len(predefinedIds)-1]
+		predefinedIds = predefinedIds[:len(predefinedIds)-1]
+
+		return lastElement, predefinedIds
+	} else {
+		return "", predefinedIds
+	}
 }
 
 func generateCumulativeProbabilities(probabilityGraph map[string]interface{}) (map[string][]model.ProbabilityAction, error) {

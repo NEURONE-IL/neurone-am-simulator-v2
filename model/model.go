@@ -39,6 +39,7 @@ type Configuration struct {
 	DocumentsQuantity    int                    `json:"documentsQuantity" bson:"documentsQuantity"`
 	RelevantsQuantity    int                    `json:"relevantsQuantity" bson:"relevantsQuantity"`
 	Sensibility          int                    `json:"sensibility" bson:"sensibility"`
+	PredefinedUsersIds   []string               `json:"predefinedUsersIds" bson:"predefinedUsersIds"`
 	Database             DataBaseConfig         `json:"database" bson:"database"`
 	Interval             int                    `json:"interval" bson:"interval"`
 }
