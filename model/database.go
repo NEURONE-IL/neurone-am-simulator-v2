@@ -14,34 +14,34 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-func GetDatabaseInstance(databaseConfig DataBaseConfig) (*mongo.Database,error){
+func GetDatabaseInstance(databaseConfig DataBaseConfig) (*mongo.Database, error) {
 
-	credentials:= options.Credential{
+	credentials := options.Credential{
 		AuthSource: databaseConfig.DatabaseName,
-		Username: databaseConfig.DatabaseUser,
-		Password: databaseConfig.DatabasePassword,
+		Username:   databaseConfig.DatabaseUser,
+		Password:   databaseConfig.DatabasePassword,
 	}
 	var err error
 	var client *mongo.Client
-	mongoUrl:= fmt.Sprintf("mongodb://%s/%s",databaseConfig.DatabaseHost,databaseConfig.DatabaseName)
-	client,err= mongo.NewClient(options.Client().ApplyURI(mongoUrl).SetAuth(credentials))
-	if err != nil {
-		fmt.Printf("Conection to DB,  %s, Error: %s", mongoUrl, err.Error())
-		return nil,err
-	}
-
+	mongoUrl := fmt.Sprintf(
+		"mongodb://%s:%s@%s/?authSource=%s&directConnection=true",
+		databaseConfig.DatabaseUser,
+		databaseConfig.DatabasePassword,
+		databaseConfig.DatabaseHost,
+		databaseConfig.DatabaseName,
+	)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	err = client.Connect(ctx)
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoUrl).SetAuth(credentials))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Conection to DB,  %s, Error: %s", mongoUrl, err.Error())
+		return nil, err
 	}
 
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		fmt.Printf("Ping to DB,  %s, Error: %s", mongoUrl, err.Error())
-		return nil,err
+		return nil, err
 	}
 
 	log.Printf("Connected to DB,  %s", mongoUrl)
@@ -50,8 +50,8 @@ func GetDatabaseInstance(databaseConfig DataBaseConfig) (*mongo.Database,error){
 
 func GetMongoCollection(collection string, database *mongo.Database) (*mongo.Collection, context.Context) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	col:= database.Collection(collection)
-	return col,ctx
+	col := database.Collection(collection)
+	return col, ctx
 }
 func GetNewObjectId() primitive.ObjectID {
 	return primitive.NewObjectID()
